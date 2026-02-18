@@ -15,7 +15,35 @@ var hasClicked2 = false;
 var hasClicked3 = false;
 var scriptStopped = false;
 
+function randomDelay(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function simulateHumanBehavior() {
+    var randomScroll = Math.random() > 0.7;
+    if (randomScroll) {
+        window.scrollTo(0, randomDelay(100, 300));
+    }
+}
+
+function hideAutomation() {
+    Object.defineProperty(navigator, 'webdriver', {
+        get: function() { return false; }
+    });
+    
+    Object.defineProperty(navigator, 'plugins', {
+        get: function() { return [1, 2, 3, 4, 5]; }
+    });
+    
+    Object.defineProperty(navigator, 'languages', {
+        get: function() { return ['zh-CN', 'zh', 'en']; }
+    });
+    
+    window.chrome = { runtime: {} };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    hideAutomation();
     autoFillLogin();
 });
 
@@ -41,26 +69,32 @@ function autoFillLogin() {
                 usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
                 usernameInput.dispatchEvent(new Event('change', { bubbles: true }));
                 
-                passwordInput.value = 'B96GppB75hUw';
-                passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-                passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                hasFilled = true;
-            }
-            
-            if (hasFilled && !hasClickedLogin) {
-                loginButton.click();
-                hasClickedLogin = true;
+                setTimeout(function() {
+                    passwordInput.value = 'B96GppB75hUw';
+                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    hasFilled = true;
+                    
+                    setTimeout(function() {
+                        if (hasFilled && !hasClickedLogin) {
+                            loginButton.click();
+                            hasClickedLogin = true;
+                        }
+                    }, randomDelay(100, 300));
+                }, randomDelay(100, 250));
             }
         } else {
             setTimeout(fill, 500);
         }
     }
     
-    setTimeout(fill, 2000);
+    setTimeout(fill, randomDelay(800, 1200));
     
     setInterval(function() {
         if (scriptStopped) return;
+        
+        simulateHumanBehavior();
         
         if (!hasFilled || !hasClickedLogin) {
             fill();
@@ -69,7 +103,7 @@ function autoFillLogin() {
         checkAndClickBtn4();
         checkAndClickBtn2();
         checkBtn3AndStop();
-    }, 500);
+    }, 100);
 }
 
 function findByXPath(xpath) {
@@ -90,8 +124,11 @@ function checkAndClickBtn4() {
     var btn = findByXPath(xpath);
     
     if (btn && btn.parentElement) {
-        btn.parentElement.click();
-        hasClicked4 = true;
+        var delay = randomDelay(50, 150);
+        setTimeout(function() {
+            btn.parentElement.click();
+            hasClicked4 = true;
+        }, delay);
     }
 }
 
@@ -104,8 +141,11 @@ function checkAndClickBtn2() {
     var btn = findByXPath(xpath);
     
     if (btn && btn.parentElement) {
-        btn.parentElement.click();
-        hasClicked2 = true;
+        var delay = randomDelay(50, 150);
+        setTimeout(function() {
+            btn.parentElement.click();
+            hasClicked2 = true;
+        }, delay);
     }
 }
 
@@ -122,17 +162,44 @@ function checkBtn3AndStop() {
     var btn3 = findByXPath(xpath3);
     
     if (btn3 && btn3.parentElement && !hasClicked3) {
-        btn3.parentElement.click();
-        hasClicked3 = true;
+        var delay3 = randomDelay(50, 150);
+        setTimeout(function() {
+            btn3.parentElement.click();
+            hasClicked3 = true;
+        }, delay3);
+        return;
+    }
+    
+    var errorText = findByXPath("//span[contains(text(),'响应码异常:3,参数异常')]");
+    
+    if (errorText) {
+        var backBtn = document.querySelector("#app > section > main > div > button");
+        if (backBtn) {
+            setTimeout(function() {
+                backBtn.click();
+            }, randomDelay(30, 80));
+            
+            var checkConfirm = setInterval(function() {
+                var btn = document.querySelector("body > div.el-message-box__wrapper > div > div.el-message-box__btns > button.el-button.el-button--default.el-button--small.el-button--primary");
+                if (btn) {
+                    clearInterval(checkConfirm);
+                    setTimeout(function() {
+                        btn.click();
+                        
+                        hasClicked4 = false;
+                        hasClicked2 = false;
+                        hasClicked3 = false;
+                    }, randomDelay(30, 80));
+                }
+            }, 50);
+        }
         return;
     }
     
     var xpath4 = "//button[contains(@class,'el-button--primary')]//span[contains(text(),'开始执行任务')]";
     var btn4 = findByXPath(xpath4);
     
-    var errorText = findByXPath("//span[contains(text(),'响应码异常:3,参数异常')]");
-    
-    if (btn4 || errorText) {
+    if (btn4) {
         scriptStopped = true;
         return;
     }
