@@ -195,6 +195,14 @@ function checkTaskFailure() {
             });
         }
     }
+    
+    var finishSpan = document.querySelector('#app > section > main > div > button:nth-child(4) > span');
+    if (finishSpan) {
+        log('检测到任务完成按钮，脚本停止运行', 'success');
+        isTaskRunning = false;
+        return;
+    }
+    
     setTimeout(checkTaskFailure, 200);
 }
 
@@ -259,46 +267,52 @@ function autoLogin() {
         log('找到登录表单，开始自动登录', 'info');
         simulateClick(usernameInput, function() {
             usernameInput.focus();
-            
-            var username = 'To-700';
-            var charIndex = 0;
-            
-            function typeUsername() {
-                if (charIndex < username.length) {
-                    usernameInput.value = username.substring(0, charIndex + 1);
-                    triggerInputEvent(usernameInput);
-                    charIndex++;
-                    setTimeout(typeUsername, randomDelay(50, 150));
-                } else {
-                    log('用户名输入完成', 'success');
-                    setTimeout(function() {
-                        simulateClick(passwordInput, function() {
-                            passwordInput.focus();
-                            
-                            var password = 'B96GppB75hUw';
-                            var pwdIndex = 0;
-                            
-                            function typePassword() {
-                                if (pwdIndex < password.length) {
-                                    passwordInput.value = password.substring(0, pwdIndex + 1);
-                                    triggerInputEvent(passwordInput);
-                                    pwdIndex++;
-                                    setTimeout(typePassword, randomDelay(50, 150));
-                                } else {
-                                    log('密码输入完成', 'success');
-                                    log('请手动点击登录按钮', 'info');
-                                    isLoggedIn = true;
-                                    setTimeout(checkLogoutAndPrompt, 1000);
-                                }
-                            }
-                            
-                            typePassword();
-                        });
-                    }, randomDelay(200, 500));
+            setTimeout(function() {
+                var username = 'To-700';
+                var charIndex = 0;
+                
+                function typeUsername() {
+                    if (charIndex < username.length) {
+                        usernameInput.value = username.substring(0, charIndex + 1);
+                        triggerInputEvent(usernameInput);
+                        charIndex++;
+                        setTimeout(typeUsername, randomDelay(50, 150));
+                    } else {
+                        log('用户名输入完成', 'success');
+                        setTimeout(function() {
+                            simulateClick(passwordInput, function() {
+                                passwordInput.focus();
+                                setTimeout(function() {
+                                    var password = 'B96GppB75hUw';
+                                    var pwdIndex = 0;
+                                    
+                                    function typePassword() {
+                                        if (pwdIndex < password.length) {
+                                            passwordInput.value = password.substring(0, pwdIndex + 1);
+                                            triggerInputEvent(passwordInput);
+                                            pwdIndex++;
+                                            setTimeout(typePassword, randomDelay(50, 150));
+                                        } else {
+                                            log('密码输入完成', 'success');
+                                            setTimeout(function() {
+                                                log('已点击登录按钮', 'success');
+                                                simulateClick(loginButton, function() {
+                                                    isLoggedIn = true;
+                                                    setTimeout(checkLogoutAndPrompt, 1000);
+                                                });
+                                            }, randomDelay(2000, 4000));
+                                        }
+                                    }
+                                    
+                                    typePassword();
+                                }, randomDelay(1000, 2000));
+                            });
+                        }, randomDelay(1000, 2000));
+                    }
                 }
-            }
-            
-            typeUsername();
+                
+                typeUsername();
+            }, randomDelay(1000, 2000));
         });
     } else {
         log('未找到登录表单', 'error');
@@ -319,12 +333,88 @@ function createCustomPrompt(defaultTime, callback, runNowCallback) {
     title.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:20px;color:#333;';
     title.textContent = '设置脚本运行时间';
     
-    var input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'HH:mm:ss';
-    input.value = defaultTime;
-    input.id = 'auto-login-time-input';
-    input.style.cssText = 'width:100%;padding:10px;font-size:16px;margin-bottom:20px;border:1px solid #ddd;border-radius:5px;';
+    var timeContainer = document.createElement('div');
+    timeContainer.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:20px;';
+    
+    var hourInput = document.createElement('input');
+    hourInput.type = 'text';
+    hourInput.maxLength = 2;
+    hourInput.placeholder = '09';
+    hourInput.style.cssText = 'width:40px;padding:10px;font-size:16px;text-align:center;border:1px solid #ddd;border-radius:5px;';
+    
+    var colon1 = document.createElement('span');
+    colon1.textContent = ':';
+    colon1.style.cssText = 'font-size:18px;font-weight:bold;';
+    
+    var minuteInput = document.createElement('input');
+    minuteInput.type = 'text';
+    minuteInput.maxLength = 2;
+    minuteInput.placeholder = '59';
+    minuteInput.style.cssText = 'width:40px;padding:10px;font-size:16px;text-align:center;border:1px solid #ddd;border-radius:5px;';
+    
+    var colon2 = document.createElement('span');
+    colon2.textContent = ':';
+    colon2.style.cssText = 'font-size:18px;font-weight:bold;';
+    
+    var secondInput = document.createElement('input');
+    secondInput.type = 'text';
+    secondInput.maxLength = 2;
+    secondInput.placeholder = '58';
+    secondInput.style.cssText = 'width:40px;padding:10px;font-size:16px;text-align:center;border:1px solid #ddd;border-radius:5px;';
+    
+    hourInput.addEventListener('keydown', function(e) {
+        if (!((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab')) {
+            e.preventDefault();
+        }
+    });
+    
+    minuteInput.addEventListener('keydown', function(e) {
+        if (!((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab')) {
+            e.preventDefault();
+        }
+    });
+    
+    secondInput.addEventListener('keydown', function(e) {
+        if (!((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Tab')) {
+            e.preventDefault();
+        }
+    });
+    
+    hourInput.addEventListener('input', function() {
+        var val = this.value.replace(/\D/g, '');
+        if (val.length > 2) val = val.substring(0, 2);
+        var num = parseInt(val);
+        if (num > 23) val = '23';
+        this.value = val;
+        if (this.value.length === 2) {
+            minuteInput.focus();
+        }
+    });
+    
+    minuteInput.addEventListener('input', function() {
+        var val = this.value.replace(/\D/g, '');
+        if (val.length > 2) val = val.substring(0, 2);
+        var num = parseInt(val);
+        if (num > 59) val = '59';
+        this.value = val;
+        if (this.value.length === 2) {
+            secondInput.focus();
+        }
+    });
+    
+    secondInput.addEventListener('input', function() {
+        var val = this.value.replace(/\D/g, '');
+        if (val.length > 2) val = val.substring(0, 2);
+        var num = parseInt(val);
+        if (num > 59) val = '59';
+        this.value = val;
+    });
+    
+    timeContainer.appendChild(hourInput);
+    timeContainer.appendChild(colon1);
+    timeContainer.appendChild(minuteInput);
+    timeContainer.appendChild(colon2);
+    timeContainer.appendChild(secondInput);
     
     var btnContainer = document.createElement('div');
     btnContainer.style.cssText = 'display:flex;gap:10px;';
@@ -345,12 +435,16 @@ function createCustomPrompt(defaultTime, callback, runNowCallback) {
     };
     
     btnConfirm.onclick = function() {
-        var time = input.value || defaultTime;
-        var timeRegex = /^(\d{2}):(\d{2}):(\d{2})$/;
-        if (!timeRegex.test(time)) {
-            log('时间格式错误，请使用 HH:mm:ss 格式', 'error');
-            return;
-        }
+        var hour = hourInput.value || '09';
+        var minute = minuteInput.value || '59';
+        var second = secondInput.value || '58';
+        
+        if (hour.length === 1) hour = '0' + hour;
+        if (minute.length === 1) minute = '0' + minute;
+        if (second.length === 1) second = '0' + second;
+        
+        var time = hour + ':' + minute + ':' + second;
+        
         overlay.remove();
         if (callback) {
             callback(time);
@@ -361,7 +455,7 @@ function createCustomPrompt(defaultTime, callback, runNowCallback) {
     btnContainer.appendChild(btnConfirm);
     
     box.appendChild(title);
-    box.appendChild(input);
+    box.appendChild(timeContainer);
     box.appendChild(btnContainer);
     overlay.appendChild(box);
     document.body.appendChild(overlay);
