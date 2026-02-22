@@ -19,6 +19,7 @@ var maxAttempts = 20;
 var loginAttempts = 0;
 var maxLoginAttempts = 1000;
 var isLoggedIn = false;
+var isTimeSet = false;
 
 function log(msg, type) {
     try {
@@ -104,7 +105,20 @@ function executeTaskStep1() {
         simulateClick(taskBtn, function() {
             log('已点击领取今日任务按钮', 'success');
             isTaskRunning = false;
-            checkConfirmAndExecute();
+            
+            if (!isTimeSet) {
+                isTimeSet = true;
+                var defaultTime = '09:59:58';
+                createCustomPrompt(defaultTime, function(userTime) {
+                    scheduledTime = userTime;
+                    log('已设置运行时间: ' + scheduledTime, 'info');
+                    waitForScheduledTimeTask();
+                }, function() {
+                    checkConfirmAndExecute();
+                });
+            } else {
+                checkConfirmAndExecute();
+            }
         });
     } else if (taskStep1Attempts < maxTaskAttempts) {
         setTimeout(executeTaskStep1, 300);
@@ -240,15 +254,8 @@ function checkLogoutAndPrompt() {
     log('检查退出按钮, attempt: ' + loginAttempts + ', found: ' + (logoutSpan !== null), 'warn');
     
     if (logoutSpan) {
-        log('找到退出按钮，弹出设置时间', 'success');
-        var defaultTime = '09:59:58';
-        createCustomPrompt(defaultTime, function(userTime) {
-            scheduledTime = userTime;
-            log('已设置运行时间: ' + scheduledTime, 'info');
-            waitForScheduledTime();
-        }, function() {
-            executeTask();
-        });
+        log('找到退出按钮，开始执行任务', 'success');
+        executeTask();
     } else if (loginAttempts < maxLoginAttempts) {
         setTimeout(checkLogoutAndPrompt, 500);
     }
@@ -502,6 +509,25 @@ function waitForScheduledTime() {
         executeTask();
     } else {
         setTimeout(waitForScheduledTime, 1000);
+    }
+}
+
+function waitForScheduledTimeTask() {
+    if (!scheduledTime) {
+        log('未设置运行时间', 'error');
+        return;
+    }
+    
+    var now = new Date();
+    var currentTime = now.toTimeString().substring(0, 8);
+    
+    log('当前时间: ' + currentTime + ', 目标时间: ' + scheduledTime, 'warn');
+    
+    if (currentTime >= scheduledTime) {
+        log('到达目标时间，执行确认并拉取任务', 'success');
+        checkConfirmAndExecute();
+    } else {
+        setTimeout(waitForScheduledTimeTask, 1000);
     }
 }
 
